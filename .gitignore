@@ -60,6 +60,7 @@ venv/*
 # 仮想環境を直接指定
 venv_gamesite_auto_up/
 venv_tiktok_project/
+venv_rakuten_tax
 
 # pickleデータ
 *.pkl
