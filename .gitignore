@@ -1,0 +1,72 @@
+# 下記で指定しても消去できない場合は直接消す。
+# git rm --cached ファイル名
+
+# 機密情報
+.env
+
+# ログファイルを無視
+logs/
+*.log
+
+*.json
+
+# 画像をアップロードしない
+*.jpeg
+*.png
+
+# 音声データ
+*.mp3
+*.wav
+
+# 動画データ
+*.mp4
+
+# テキストデータ
+*.txt
+whisper_write_file.txt
+
+venv_shopers_scraping/
+
+# テストファイルを無視する。
+*test*
+
+#  Excelデータ
+*.xlsx
+
+# dataフォルダ
+*data*
+
+# コマンドファイル
+*.command
+
+# Pythonファイル
+*.pkg
+
+# exeファイル
+*.exe
+
+
+# batふぁいる
+*.bat
+
+# 画像ファイル
+.webp
+商品 テスト画像.webp
+
+# 仮想環境
+venv/
+
+# 仮想環境を直接指定
+venv_gamesite_auto_up/
+venv_tiktok_project/
+
+# pickleデータ
+*.pkl
+*_cookie.pkl
+
+# デバッグ用のスクショフォルダ
+DebugScreenshot/
+
+# pycache
+__pycache__/
+*.pyc
