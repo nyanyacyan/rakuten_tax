@@ -35,6 +35,7 @@ venv_shopers_scraping/
 
 # dataフォルダ
 *data*
+*.csv
 
 # コマンドファイル
 *.command
@@ -54,7 +55,7 @@ venv_shopers_scraping/
 商品 テスト画像.webp
 
 # 仮想環境
-venv/
+venv/*
 
 # 仮想環境を直接指定
 venv_gamesite_auto_up/
