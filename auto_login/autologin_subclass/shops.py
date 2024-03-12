@@ -22,21 +22,21 @@ load_dotenv()  # .env ファイルから環境変数を読み込む
 # 1----------------------------------------------------------------------------------
 
 
-class Gametrade(GetCookie):
+class Rakuten(GetCookie):
     def __init__(self, debug_mode=False):
-        # 親クラスにて定義した引数をここで引き渡す
+        # 親クラスにて定義した引数をここで引き渡すte
         # configの内容をここで全て定義
         self.config_xpath = {
-            "site_name": "GAMETRADE",
-            "login_url": os.getenv('GAME_TRADE_LOGIN_URL'),
-            "userid": os.getenv('GAME_TRADE_ID_1'),
-            "password": os.getenv('GAME_TRADE_PASS_1'),
-            "userid_xpath": "//input[@id='session_email']",
-            "password_xpath": "//input[@id='session_password']",
-            "login_button_xpath": "//button[@type='submit']",
+            "site_name": "rakuten",
+            "login_url": os.getenv('RAKUTEN_LOGIN_URL'),
+            "userid": os.getenv('LOGIN_ID'),
+            "password": os.getenv('LOGIN_PASS'),
+            "userid_xpath": "//input[@id='loginInner_u']",
+            "password_xpath": "//input[@id='loginInner_p']",
+            "login_button_xpath": "//input[@type='submit']",
             "login_checkbox_xpath": "",
             "user_element_xpath": "//div[@class='user']",
-            "cookies_file_name": "game_trade_cookie_file.pkl"
+            "cookies_file_name": "rakuten_cookie_file.pkl"
         }
 
         super().__init__(self.config_xpath, debug_mode=debug_mode)

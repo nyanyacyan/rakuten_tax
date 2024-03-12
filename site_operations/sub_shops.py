@@ -22,16 +22,20 @@ load_dotenv()  # .env ファイルから環境変数を読み込む
 # 1----------------------------------------------------------------------------------
 
 
-class Gametrade(SiteOperations):
-    def __init__(self, debug_mode=False):
+class Rakuten(SiteOperations):
+    def __init__(self, order_number, price, debug_mode=False):
         # 親クラスにて定義した引数をここで引き渡す
         # configの内容をここで全て定義
+        self.order_number = order_number
+        self.price = price
+
         self.config_xpath = {
-            "site_name": "GAMETRADE",
-            "main_url": os.getenv('GAME_TRADE_MAIN_URL'),
-            "cookies_file_name": "game_trade_cookie_file.pkl",
-            "lister_btn_xpath" : "//div[@class='exhibit-exhibit-button']/a",
-            "deploy_btn_xpath" : "//button[@type='submit' and contains(text(), '出品する')]"
+            "site_name": "rakuten",
+            "main_url": os.getenv('RAKUTEN_MAIN_URL'),
+            "cookies_file_name": "rakuten_cookie_file.pkl",
+            "buy_history" : "//a[@aria-label='購入履歴']",
+            "history_detail" : f"//li[contains(., '{self.order_number}')]/following-sibling::li[contains(@class, 'oDrDetailList')]/a",
+            "tax_rate_part": f"//td[contains(@class, 'widthPrice') and contains(text(), '{self.price}円')]/following-sibling::td[@class='widthTax taRight']"
         }
 
         super().__init__(self.config_xpath, debug_mode=debug_mode)

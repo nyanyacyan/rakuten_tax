@@ -17,6 +17,7 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 
 from dotenv import load_dotenv
+
 from selenium import webdriver
 from selenium.common.exceptions import (ElementNotInteractableException,
                                         InvalidSelectorException,
@@ -31,7 +32,6 @@ from selenium.webdriver.support.ui import WebDriverWait
 from webdriver_manager.chrome import ChromeDriverManager
 
 # 自作モジュール
-from auto_login.solve_recaptcha import RecaptchaBreakthrough
 from logger.debug_logger import Logger
 
 load_dotenv()
@@ -44,13 +44,9 @@ executor = ThreadPoolExecutor(max_workers=5)
 
 class GetCookie:
     '''新しいCookieを取得する or Cookieが使わないサイト'''
-    def __init__(self, config, debug_mode=False):
-        '''configにパスを集約させて子クラスで引き渡す'''
-        # Loggerクラスを初期化
-        debug_mode = os.getenv('DEBUG_MODE', 'False') == 'True'
-        self.logger_instance = Logger(__name__, debug_mode=debug_mode)
-        self.logger = self.logger_instance.get_logger()
-        self.debug_mode = debug_mode
+    def __init__(self, config_xpath, debug_mode=False):
+        '''config_xpathにパスを集約させて子クラスで引き渡す'''
+        self.logger = self.setup_logger()
 
         chrome_options = Options()
         # chrome_options.add_argument("--headless")  # ヘッドレスモードで実行
@@ -66,28 +62,32 @@ class GetCookie:
         self.current_url = self.chrome.current_url
 
         # メソッド全体で使えるように定義
-        self.account_name = config["account_name"]
+        self.site_name = config_xpath["site_name"]
 
         # xpath全体で使えるように初期化
-        self.login_url = config["login_url"]
-        self.userid = config["userid"]
-        self.password = config["password"]
-        self.userid_xpath = config["userid_xpath"]
-        self.password_xpath = config["password_xpath"]
-        self.login_button_xpath = config["login_button_xpath"]
-        self.login_checkbox_xpath = config["login_checkbox_xpath"]
-        self.user_element_xpath = config["user_element_xpath"]
-        self.cookies_file_name = config["cookies_file_name"]
-
-        # SolverRecaptchaクラスを初期化
-        self.recaptcha_breakthrough = RecaptchaBreakthrough(self.chrome)
+        self.login_url = config_xpath["login_url"]
+        self.userid = config_xpath["userid"]
+        self.password = config_xpath["password"]
+        self.userid_xpath = config_xpath["userid_xpath"]
+        self.password_xpath = config_xpath["password_xpath"]
+        self.login_button_xpath = config_xpath["login_button_xpath"]
+        self.login_checkbox_xpath = config_xpath["login_checkbox_xpath"]
+        self.user_element_xpath = config_xpath["user_element_xpath"]
+        self.cookies_file_name = config_xpath["cookies_file_name"]
 
 
 # ----------------------------------------------------------------------------------
+# Loggerセットアップ
+
+    def setup_logger(self):
+        debug_mode = os.getenv('DEBUG_MODE', 'False') == 'True'
+        logger_instance = Logger(__name__, debug_mode=debug_mode)
+        return logger_instance.get_logger()
 
 
+# ----------------------------------------------------------------------------------
+# 同期的なログイン
 
-    # 同期的なログイン
     def open_site(self):
         '''Cookieで開かない際に使うメソッド'''
         self.logger.info(f"{self.site_name} Cookie作成を開始")
@@ -108,6 +108,7 @@ class GetCookie:
 
 
 # ----------------------------------------------------------------------------------
+
 
     # IDとパスを入力
     def id_pass_input(self):
@@ -144,24 +145,26 @@ class GetCookie:
 # ----------------------------------------------------------------------------------
 
 
-    def login_btn(self):
+    def login_checkbox(self):
         '''チェックボックスにチェックいれる'''
         # ログインを維持するチェックボックスを探す
         try:
-            login_btn = self.chrome.find_element_by_xpath(self.login_checkbox_xpath)
-            self.logger.debug(f"{self.site_name} ログインボタン が見つかりました。")
+            login_checkbox = self.chrome.find_element_by_xpath(self.login_checkbox_xpath)
+            self.logger.debug(f"{self.site_name} チェックボタンが見つかりました。")
 
         except ElementNotInteractableException as e:
-            self.logger.error(f"{self.site_name} ログインボタン が見つかりません。{e}")
+            self.logger.error(f"{self.site_name} チェックボックスが見つかりません。{e}")
 
+        except InvalidSelectorException:
+            self.logger.debug(f"{self.site_name} チェックボックスないためスキップ")
 
         try:
-            if login_btn:
+            if login_checkbox:
             # remember_boxをクリックする
-                login_btn.click()
-            self.logger.debug(f"{self.site_name} ログインボタン をクリック")
+                login_checkbox.click()
+            self.logger.debug(f"{self.site_name} チェックボタンをクリック")
 
-        except Exception as e:
+        except UnboundLocalError:
             self.logger.debug(f"{self.site_name} チェックボタンなし")
 
         time.sleep(3)
@@ -170,79 +173,28 @@ class GetCookie:
 # ----------------------------------------------------------------------------------
 
 
-    def tiktok_captcha_process(self):
+    def recaptcha_sleep(self):
         '''reCAPTCHA検知してある場合は2CAPTCHAメソッドを実行'''
         try:
             # 現在のURL
             current_url = self.chrome.current_url
             self.logger.debug(current_url)
-
-            # セキュリティがあるかどうか確認
+            # sitekeyを検索
             elements = self.chrome.find_elements_by_css_selector('[data-sitekey]')
             if len(elements) > 0:
-                self.logger.info(f"{self.site_name} reCAPTCHA処理実施中")
+                self.logger.info(f"{self.site_name} reCAPTCHA発見したため手動にて入力")
+                time.sleep(120)
 
+            # 通知いれるか検討
 
-                # solveRecaptchaファイルを実行
-                try:
-                    self.recaptcha_breakthrough.recaptchaIfNeeded(current_url)
-                    self.logger.info(f"{self.site_name} reCAPTCHA処理、完了")
-
-                except Exception as e:
-                    self.logger.error(f"{self.site_name} reCAPTCHA処理に失敗しました: {e}")
-                    # ログイン失敗をライン通知
-
-
-                self.logger.debug(f"{self.site_name} クリック開始")
-
-                # ログインボタン要素を見つける
-                login_button = self.chrome.find_element_by_id(f"{self.site_name} recaptcha-submit")
-
-                # ボタンが無効化されているか確認し、無効化されていれば有効にする
-                self.chrome.execute_script("document.getElementById('recaptcha-submit').disabled = false;")
-
-                # ボタンをクリックする
-                login_button.click()
-
+            # reCAPTCHAなし
             else:
-                self.logger.info(f"{self.site_name} reCAPTCHAなし")
-
-                login_button = self.chrome.find_element_by_xpath(self.login_button_xpath)
-                self.logger.debug(f"{self.site_name} ボタン捜索完了")
-
-                login_button.send_keys(Keys.ENTER)
-                self.logger.debug(f"{self.site_name} クリック完了")
-
-        # recaptchaなし
-        except NoSuchElementException:
-            self.logger.info(f"{self.site_name} reCAPTCHAなし")
-
-            login_button = self.chrome.find_element_by_xpath(self.login_button_xpath)
-            self.logger.debug(f"{self.site_name} ボタン捜索完了")
-
-
-            # ログインボタンクリック
-            try:
-                login_button.send_keys(Keys.ENTER)
-                self.logger.debug(f"{self.site_name} クリック完了")
-
-            except ElementNotInteractableException:
-                self.chrome.execute_script("arguments[0].click();", login_button)
-                self.logger.debug(f"{self.site_name} JavaScriptを使用してクリック実行")
-
-        # ページ読み込み待機
-        try:
-            # ログインした後のページ読み込みの完了確認
-            WebDriverWait(self.chrome, 5).until(
-            lambda driver: driver.execute_script('return document.readyState') == 'complete'
-            )
-            self.logger.debug(f"{self.site_name} ログインページ読み込み完了")
-
+                self.logger.info(f"reCAPTCHAなし")
 
         except Exception as e:
-            self.logger.error(f"{self.site_name} 2CAPTCHAの処理を実行中にエラーが発生しました: {e}")
+            self.logger.error(f"reCAPTCHA処理中にエラーが発生しました: {e}")
 
-        time.sleep(10)
+
 
 
 # ----------------------------------------------------------------------------------
@@ -325,8 +277,7 @@ class GetCookie:
         self.open_site()
         self.id_pass_input()
         self.login_checkbox()
-        self.recaptcha_process()
-        self.isChecked()
+        self.recaptcha_sleep()
         self.save_cookies()
 
         self.logger.debug(f"{__name__}: 処理完了")

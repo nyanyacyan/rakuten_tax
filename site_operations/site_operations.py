@@ -6,16 +6,15 @@
 # 2023/3/9 制作
 # ----------------------------------------------------------------------------------
 import asyncio
-import datetime
 import functools
 import os
 import pickle
 import time
-import requests
+from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor
 
+import requests
 from dotenv import load_dotenv
-
 from selenium import webdriver
 from selenium.common.exceptions import (ElementNotInteractableException,
                                         InvalidSelectorException,
@@ -30,10 +29,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from webdriver_manager.chrome import ChromeDriverManager
 
 # 自作モジュール
-from auto_login.solve_recaptcha import RecaptchaBreakthrough
 from logger.debug_logger import Logger
-
-from file_select.file_select import FileSelect
 
 load_dotenv()
 
@@ -50,11 +46,7 @@ class SiteOperations:
     '''Cookie利用してログインして処理を実行するクラス'''
     def __init__(self, config, debug_mode=False):
         '''config_xpathにパスを集約させて子クラスで引き渡す'''
-        # Loggerクラスを初期化
-        debug_mode = os.getenv('DEBUG_MODE', 'False') == 'True'
-        self.logger_instance = Logger(__name__, debug_mode=debug_mode)
-        self.logger = self.logger_instance.get_logger()
-        self.debug_mode = debug_mode
+        self.logger = self.setup_logger()
 
         chrome_options = Options()
         # chrome_options.add_argument("--headless")  # ヘッドレスモードで実行
@@ -72,30 +64,24 @@ class SiteOperations:
         # メソッド全体で使えるように定義（デバッグで使用）
         self.site_name = config["site_name"]
 
-        #! 使ってないものは削除する
-        # xpath全体で使えるように初期化
-
-        # self.userid = config["userid"]
-        # self.password = config["password"]
-        # self.userid_xpath = config["userid_xpath"]
-        # self.password_xpath = config["password_xpath"]
-        # self.login_button_xpath = config["login_button_xpath"]
-        # self.login_checkbox_xpath = config["login_checkbox_xpath"]
-        # self.user_element_xpath = config["user_element_xpath"]
-
         #* 利用してるものconfig
         self.cookies_file_name = config["cookies_file_name"]
         self.main_url = config["main_url"]
-        self.lister_btn_xpath = config["lister_btn_xpath"]
-        self.deploy_btn_xpath = config["deploy_btn_xpath"]
-
-        # SolverRecaptchaクラスを初期化
-        self.recaptcha_breakthrough = RecaptchaBreakthrough(self.chrome)
-        FileSelect(self.chrome)
+        self.buy_history = config["buy_history"]
+        self.tax_point = config["tax_rate_part"]
 
 
 # ----------------------------------------------------------------------------------
+# Loggerセットアップ
 
+    def setup_logger(self):
+        debug_mode = os.getenv('DEBUG_MODE', 'False') == 'True'
+        logger_instance = Logger(__name__, debug_mode=debug_mode)
+        return logger_instance.get_logger()
+
+
+# ----------------------------------------------------------------------------------
+# Cookieでログイン
 
     def cookie_login(self):
         '''Cookieを使ってログイン'''
@@ -154,24 +140,27 @@ class SiteOperations:
             self.logger.error(f"{self.site_name} ログイン処理中にエラーが発生: {e}")
 
         #TODO スクリーンショット
-        self.chrome.save_screenshot('cookie_login_after.png')
-        self.logger.debug(f"{self.site_name} ログイン状態のスクショ撮影")
+        filename = f"DebugScreenshot/cookie_login_after_{timestamp}.png"
+        self.chrome.save_screenshot(filename)
+        self.logger.debug(f"{self.site_name} 出品ページにスクショ撮影")
 
-# ----------------------------------------------------------------------------------
+        time.sleep(1)
 
+# ----------
+# ------------------------------------------------------------------------
+# 購入履歴を見つけて押す
 
-    def lister_btnPush(self):
-        '''出品ボタンを見つけて押す'''
+    def buy_history_btnPush(self):
         try:
-            # 出品ボタンを探して押す
-            self.logger.debug("出品ボタンを特定開始")
-            lister_btn = self.chrome.find_element_by_xpath(self.lister_btn_xpath)
-            self.logger.debug("出品ボタンを発見")
+            # 購入履歴を探して押す
+            self.logger.debug("購入履歴を特定開始")
+            buy_history_btn = self.chrome.find_element_by_xpath(self.buy_history)
+            self.logger.debug("購入履歴を発見")
 
         except NoSuchElementException as e:
-            self.logger.error(f"出品ボタンが見つかりません:{e}")
+            self.logger.error(f"購入履歴が見つかりません:{e}")
 
-        lister_btn.click()
+        buy_history_btn.click()
 
         try:
             # ボタンを押した後のページ読み込みの完了確認
@@ -184,7 +173,7 @@ class SiteOperations:
             self.logger.error(f"{self.site_name} 処理中にエラーが発生: {e}")
 
         #TODO スクリーンショット
-        filename = f"DebugScreenshot/lister_page_{timestamp}.png"
+        filename = f"DebugScreenshot/buy_history_btnPush_{timestamp}.png"
         self.chrome.save_screenshot(filename)
         self.logger.debug(f"{self.site_name} 出品ページにスクショ撮影")
 
@@ -192,116 +181,51 @@ class SiteOperations:
 
 
 # ----------------------------------------------------------------------------------
+# 注文詳細を表示を押す
 
-#! deployする際に「reCAPTCHAあり」の場合に利用
-#TODO 手直し必要
-
-    def recap_deploy(self):
-        '''reCAPTCHA検知してある場合は2CAPTCHAメソッドを実行'''
+    def history_detail_btnPush(self):
         try:
-            # 現在のURL
-            current_url = self.chrome.current_url
-            self.logger.debug(current_url)
-            # sitekeyを検索
-            elements = self.chrome.find_elements_by_css_selector('[data-sitekey]')
-            if len(elements) > 0:
-                self.logger.info(f"{self.site_name} reCAPTCHA処理実施中")
-
-
-                # solveRecaptchaファイルを実行
-                try:
-                    self.recaptcha_breakthrough.recaptchaIfNeeded(current_url)
-                    self.logger.info(f"{self.site_name} reCAPTCHA処理、完了")
-
-                except Exception as e:
-                    self.logger.error(f"{self.site_name} reCAPTCHA処理に失敗しました: {e}")
-                    # ログイン失敗をライン通知
-
-
-                self.logger.debug(f"{self.site_name} クリック開始")
-
-                # deploy_btn 要素を見つける
-                deploy_btn = self.chrome.find_element_by_xpath(self.deploy_btn_xpath)
-
-                # ボタンが無効化されているか確認し、無効化されていれば有効にする
-                self.chrome.execute_script("document.getElementByXPATH(self.deploy_btn_xpath).disabled = false;")
-
-                # ボタンをクリックする
-                deploy_btn.click()
-
-            else:
-                self.logger.info(f"{self.site_name} reCAPTCHAなし")
-
-                login_button = self.chrome.find_element_by_xpath(self.login_button_xpath)
-                self.logger.debug(f"{self.site_name} ボタン捜索完了")
-
-                deploy_btn.click()
-                self.logger.debug(f"{self.site_name} クリック完了")
-
-        # recaptchaなし
-        except NoSuchElementException:
-            self.logger.info(f"{self.site_name} reCAPTCHAなし")
-
-            login_button = self.chrome.find_element_by_xpath(self.login_button_xpath)
-            self.logger.debug(f"{self.site_name} ボタン捜索完了")
-
-
-            # ログインボタンクリック
-            try:
-                deploy_btn.click()
-                self.logger.debug(f"{self.site_name} クリック完了")
-
-            except ElementNotInteractableException:
-                self.chrome.execute_script("arguments[0].click();", login_button)
-                self.logger.debug(f"{self.site_name} JavaScriptを使用してクリック実行")
-
-        # ページ読み込み待機
-        try:
-            # ログインした後のページ読み込みの完了確認
-            WebDriverWait(self.chrome, 5).until(
-            lambda driver: driver.execute_script('return document.readyState') == 'complete'
-            )
-            self.logger.debug(f"{self.site_name} ログインページ読み込み完了")
-
-
-        except Exception as e:
-            self.logger.error(f"{self.site_name} 2CAPTCHAの処理を実行中にエラーが発生しました: {e}")
-
-        time.sleep(3)
-
-
-
-# ----------------------------------------------------------------------------------
-
-#! 「reCAPTCHAなし」でdeploy
-    def deploy_btnPush(self):
-        '''出品ページにあるすべての入力が完了したあとに押す「出品する」というボタン→ deploy_btn を見つけて押す'''
-        try:
-            # deploy_btnを探して押す
-            self.logger.debug(" deploy_btn を特定開始")
-            deploy_btn = self.chrome.find_element_by_xpath(self.deploy_btn_xpath)
-            self.logger.debug(" deploy_btn を発見")
+            # 購入履歴を探して押す
+            self.logger.debug("注文詳細を表示 を特定開始")
+            history_detail_btn = self.chrome.find_element_by_xpath(self.history_detail)
+            self.logger.debug("注文詳細を表示 を発見")
 
         except NoSuchElementException as e:
-            self.logger.error(f" deploy_btn が見つかりません:{e}")
+            self.logger.error(f"注文詳細を表示 が見つかりません:{e}")
 
-        deploy_btn.click()
+        history_detail_btn.click()
 
         try:
-            # 実行した後のページ読み込みの完了確認
+            # ボタンを押した後のページ読み込みの完了確認
             WebDriverWait(self.chrome, 5).until(
             lambda driver: driver.execute_script('return document.readyState') == 'complete'
             )
-            self.logger.debug(f"{self.site_name} 次のページ読み込み完了")
+            self.logger.debug(f"{self.site_name} ページ読み込み完了")
 
         except Exception as e:
-            self.logger.error(f"{self.site_name} 実行処理中にエラーが発生: {e}")
+            self.logger.error(f"{self.site_name} 処理中にエラーが発生: {e}")
 
         #TODO スクリーンショット
-        filename = f"DebugScreenshot/deploy_btnPush_after_{timestamp}.png"
+        filename = f"DebugScreenshot/history_detail_btnPush_{timestamp}.png"
         self.chrome.save_screenshot(filename)
+        self.logger.debug(f"{self.site_name} 出品ページにスクショ撮影")
 
         time.sleep(1)
+
+# ----------------------------------------------------------------------------------
+# tax_rate_part 部分を抽出
+
+    def tax_rate(self):
+        try:
+            # 購入履歴を探して押す
+            self.logger.debug(" tax_rate_part を特定開始")
+            tax_rate_part = self.chrome.find_element_by_xpath(self.tax_rate_part)
+            self.logger.debug(" tax_rate_part を発見")
+
+        except NoSuchElementException as e:
+            self.logger.error(f" tax_rate_part が見つかりません:{e}")
+
+        return tax_rate_part
 
 
 # ----------------------------------------------------------------------------------
@@ -314,7 +238,9 @@ class SiteOperations:
         self.logger.debug(f"{__name__}: 処理開始")
 
         self.cookie_login()
-        self.lister_btnPush()
+        self.buy_history_btnPush()
+        self.history_detail_btnPush()
+        self.tax_rate()
 
         self.logger.debug(f"{__name__}: 処理完了")
 
