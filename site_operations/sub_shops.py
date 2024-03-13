@@ -35,13 +35,17 @@ class RakutenOperations(SiteOperations):
             "cookies_file_name": "rakuten_cookie_file.pkl",
             "buy_history" : "//a[contains(text(), '購入履歴（楽天市場）')]",
             "history_detail" : f"//li[contains(., '{self.order_number}')]/following-sibling::li[contains(@class, 'oDrDetailList')]/a",
-            "tax_rate_part": f"//td[contains(@class, 'widthPrice') and contains(text(), '{self.price}円')]/following-sibling::td[@class='widthTax taRight']"
+            "tax_rate_part": f"//td[contains(@class, 'widthPrice') and contains(text(), '{self.price}円')]/following-sibling::td[@class='widthTax taRight']",
+            "go_back_part": "//a[@aria-label='購入履歴']"
         }
 
         super().__init__(chrome, self.config, debug_mode=debug_mode)
 
-    def process(self):
+    def start_move(self):
         self.operation()
+
+    def process(self):
+        self.operation_process()
 
 
 # ２----------------------------------------------------------------------------------

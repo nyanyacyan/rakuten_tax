@@ -57,6 +57,7 @@ class SiteOperations:
         self.buy_history = config["buy_history"]
         self.history_detail = config["history_detail"]
         self.tax_rate_part = config["tax_rate_part"]
+        self.go_back_part = config["go_back_part"]
 
 
 # ----------------------------------------------------------------------------------
@@ -74,11 +75,6 @@ class SiteOperations:
 
     def buy_history_btnPush(self):
         try:
-            #TODO スクリーンショット
-            filename = f"DebugScreenshot/new_page_{timestamp}.png"
-            self.chrome.save_screenshot(filename)
-            self.logger.debug(f"{self.site_name} 新しいインスタンスに移行、スクショ撮影")
-
             current_url = self.chrome.current_url
             self.logger.info(f"URL: {current_url}")
 
@@ -103,11 +99,6 @@ class SiteOperations:
 
         except Exception as e:
             self.logger.error(f"{self.site_name} 処理中にエラーが発生: {e}")
-
-        #TODO スクリーンショット
-        filename = f"DebugScreenshot/buy_history_btnPush_{timestamp}.png"
-        self.chrome.save_screenshot(filename)
-        self.logger.debug(f"{self.site_name} 出品ページにスクショ撮影")
 
         time.sleep(1)
 
@@ -137,16 +128,37 @@ class SiteOperations:
         except Exception as e:
             self.logger.error(f"{self.site_name} 処理中にエラーが発生: {e}")
 
-        #TODO スクリーンショット
-        filename = f"DebugScreenshot/history_detail_btnPush_{timestamp}.png"
-        self.chrome.save_screenshot(filename)
-        self.logger.debug(f"{self.site_name} 出品ページにスクショ撮影")
+        time.sleep(1)
+
+
+# ----------------------------------------------------------------------------------
+# tax_rate_part 部分へ移動のみ
+
+    def start_line(self):
+        try:
+            # 購入履歴を探して押す
+            self.logger.debug(" start_line へ移動開始")
+            tax_rate_part = self.chrome.find_element_by_xpath(self.tax_rate_part)
+            self.logger.debug(" start_line への移動完了")
+
+        except NoSuchElementException as e:
+            self.logger.error(f" tax_rate_part が見つかりません:{e}")
+
+        try:
+            # ボタンを押した後のページ読み込みの完了確認
+            WebDriverWait(self.chrome, 5).until(
+            lambda driver: driver.execute_script('return document.readyState') == 'complete'
+            )
+            self.logger.debug(f"{self.site_name} ページ読み込み完了")
+
+        except Exception as e:
+            self.logger.error(f"{self.site_name} 処理中にエラーが発生: {e}")
 
         time.sleep(1)
 
 
 # ----------------------------------------------------------------------------------
-# tax_rate_part 部分を抽出
+# 消費税を取得
 
     def tax_rate(self):
         try:
@@ -158,6 +170,18 @@ class SiteOperations:
         except NoSuchElementException as e:
             self.logger.error(f" tax_rate_part が見つかりません:{e}")
 
+        try:
+            # ボタンを押した後のページ読み込みの完了確認
+            WebDriverWait(self.chrome, 5).until(
+            lambda driver: driver.execute_script('return document.readyState') == 'complete'
+            )
+            self.logger.debug(f"{self.site_name} ページ読み込み完了")
+
+        except Exception as e:
+            self.logger.error(f"{self.site_name} 処理中にエラーが発生: {e}")
+
+        time.sleep(1)
+
         self.logger.debug(tax_rate_part.get_attribute('class'))
         tax_rate_text = tax_rate_part.text
         self.logger.debug(tax_rate_text)
@@ -165,19 +189,58 @@ class SiteOperations:
 
 
 # ----------------------------------------------------------------------------------
+# 購入履歴を見つけて押す（一個）戻る
 
-#TODO メインメソッド
-#TODO ここにすべてを集約させる
+    def go_back(self):
+        try:
+            # 購入履歴を探して押す
+            self.logger.debug(" 購入履歴(戻る) を特定開始")
+            go_back_btn = self.chrome.find_element_by_xpath(self.go_back_part)
+            self.logger.debug(" 購入履歴(戻る) を発見")
+
+            go_back_btn.click()
+
+        except NoSuchElementException as e:
+            self.logger.error(f" 購入履歴(戻る) が見つかりません:{e}")
+
+
+        try:
+            # ボタンを押した後のページ読み込みの完了確認
+            WebDriverWait(self.chrome, 5).until(
+            lambda driver: driver.execute_script('return document.readyState') == 'complete'
+            )
+            self.logger.debug(f"{self.site_name} ページ読み込み完了")
+
+        except Exception as e:
+            self.logger.error(f"{self.site_name} 処理中にエラーが発生: {e}")
+
+        time.sleep(1)
+
+
+# ----------------------------------------------------------------------------------
+# 処理するまで進むためのメソッド（カプセル化）
 
     def operation(self):
-        '''メインメソッド'''
         self.logger.debug(f"{__name__}: 処理開始")
 
         self.buy_history_btnPush()
         self.history_detail_btnPush()
-        self.tax_rate()
+        self.start_line()
 
         self.logger.debug(f"{__name__}: 処理完了")
+
+
+# ----------------------------------------------------------------------------------
+# 繰り返し処理する部分（カプセル化）
+
+    def operation_process(self):
+        self.logger.debug(f"{__name__} process: 処理開始")
+
+        self.go_back()
+        self.history_detail_btnPush()
+        self.tax_rate()
+
+        self.logger.debug(f"{__name__} process: 処理完了")
 
 
 # ----------------------------------------------------------------------------------
