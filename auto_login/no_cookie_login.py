@@ -58,6 +58,7 @@ class NoCookieLogin:
         self.login_button_xpath = config["login_button_xpath"]
         self.login_checkbox_xpath = config["login_checkbox_xpath"]
         self.user_element_xpath = config["user_element_xpath"]
+        self.buy_history = config["buy_history"]
 
         self.logger = self.setup_logger(debug_mode=debug_mode)
 
@@ -190,53 +191,36 @@ class NoCookieLogin:
 
 # ----------------------------------------------------------------------------------
 
+# 購入履歴を見つけて押す
 
-    # def save_cookies(self):
-    #     '''  Cookieを取得する'''
-    #     self.logger.debug(f"{self.site_name} Cookieの取得開始")
-    #     # cookiesは、通常、複数のCookie情報を含む大きなリスト担っている
-    #     # 各Cookieはキーと値のペアを持つ辞書（またはオブジェクト）として格納されてる
-    #     cookies = self.chrome.get_cookies()
-    #     self.logger.debug(f"{self.site_name} Cookieの取得完了")
+    def buy_history_btnPush(self):
+        try:
+            current_url = self.chrome.current_url
+            self.logger.info(f"URL: {current_url}")
 
-    #     # クッキーの存在を確認
-    #     # 「expiry」は有効期限 →Columnに存在する
-    #     # 各Cookieから['name']['expiry']を抽出してテキストに保存
-    #     #! 必ずテキストを確認してCookieの有効期限を確認する
-    #     #! 一番期日が短いものについて必ず確認してCookieの使用期間を明確にする
-    #     #! _gid:24時間の有効期限があり、訪問者の1日ごとの行動を追跡
 
-    #     if cookies:
-    #         self.logger.debug(f"{self.site_name} クッキーが存在します。")
-    #         with open(f'auto_login/cookies/{self.site_name}_cookie.txt', 'w', encoding='utf-8') as file:
-    #             for cookie in cookies:
-    #                 if 'expiry' in cookie:
-    #                     expiry_timestamp = cookie['expiry']
+            # 購入履歴を探して押す
+            self.logger.debug("購入履歴を特定開始")
+            buy_history_btn = self.chrome.find_element_by_xpath(self.buy_history)
+            self.logger.debug("購入履歴を発見")
 
-    #                     # UNIXタイムスタンプを datetime オブジェクトに変換
-    #                     expiry_datetime = datetime.datetime.utcfromtimestamp(expiry_timestamp)
+            buy_history_btn.click()
 
-    #                     # テキストに書き込めるようにクリーニング
-    #                     cookie_expiry_timestamp = f"Cookie: {cookie['name']} の有効期限は「{expiry_datetime}」\n"
-    #                     file.write(cookie_expiry_timestamp)
+        except NoSuchElementException as e:
+            self.logger.error(f"購入履歴が見つかりません:{e}")
 
-    #     else:
-    #         self.logger.debug(f"{self.site_name} にはクッキーが存在しません。")
 
-    #     # Cookieのディレクトリを指定
-    #     cookies_file_path = f'cookies/{self.cookies_file_name}'
+        try:
+            # ボタンを押した後のページ読み込みの完了確認
+            WebDriverWait(self.chrome, 5).until(
+            lambda driver: driver.execute_script('return document.readyState') == 'complete'
+            )
+            self.logger.debug(f"{self.site_name} ページ読み込み完了")
 
-    #     # pickleデータを蓄積（ディレクトリがなければ作成）
-    #     with open(f'auto_login/cookies/{self.cookies_file_name}', 'wb') as file:
-    #         pickle.dump(cookies, file)
+        except Exception as e:
+            self.logger.error(f"{self.site_name} 処理中にエラーが発生: {e}")
 
-    #     self.logger.debug(f"{self.site_name} Cookie、保存完了。")
-
-    #     with open(f'auto_login/cookies/{self.cookies_file_name}', 'rb') as file:
-    #         cookies = pickle.load(file)
-
-    #     # 読み込んだデータを表示
-    #     self.logger.debug(f"cookies: {cookies} \nCookieの存在を確認。")
+        time.sleep(1)
 
 
 # ----------------------------------------------------------------------------------
@@ -252,6 +236,7 @@ class NoCookieLogin:
         self.login_checkbox()
         self.recaptcha_sleep()
         self.login_btnPush()
+        self.buy_history_btnPush()
 
         self.logger.debug(f"{__name__}: 処理完了")
 

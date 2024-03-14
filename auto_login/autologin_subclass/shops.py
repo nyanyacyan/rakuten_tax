@@ -35,6 +35,7 @@ class RakutenLogin(NoCookieLogin):
             "login_button_xpath": "//input[@type='submit']",
             "login_checkbox_xpath": "",
             "user_element_xpath": "//div[@class='user']",
+            "buy_history" : "//a[contains(text(), '購入履歴（楽天市場）')]"
         }
 
         super().__init__(chrome, self.config_xpath, debug_mode=debug_mode)
