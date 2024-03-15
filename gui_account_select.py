@@ -72,17 +72,21 @@ class App:
 # CSVファイルの選択
 
     def select_csv_file(self):
-        file_path = filedialog.askopenfilename(filetypes=[("CSV files", "*.csv")])
-        self.logger.debug(f" file_pathは : {file_path}")
+        try:
+            file_path = filedialog.askopenfilename(filetypes=[("CSV files", "*.csv")])
+            self.logger.debug(f" file_pathは : {file_path}")
 
-        # インスタンス化
-        self.add_order_number = AddOrderNumbers(file_path)
+            # インスタンス化
+            self.add_order_number = AddOrderNumbers(file_path)
 
-        self.add_order_number.csv_fixed()
-        self.logger.debug("CSVファイル修正、完了")
+            self.add_order_number.csv_fixed()
+            self.logger.debug("CSVファイル修正、完了")
 
-        self.show_message("CSVファイル選択完了", "black")
-        return print("CSVファイル選択完了")
+            self.show_message("CSVファイル選択完了", "blue")
+            return print("CSVファイル選択完了")
+
+        except AttributeError as e:
+            messagebox.showerror("エラー", "ファイルの形式が違います。\n「SHIFT-JISに変換」を行ってください。")
 
 
 # ----------------------------------------------------------------------------------
@@ -105,7 +109,7 @@ class App:
             # encodingを「SHIFT_JIS」へ変更
             df.to_csv(new_file_path, encoding='shift_jis', index=False)
 
-            messagebox.showinfo("完了通知", "ファイル形式の変換処理が完了しました。\n「UTF-8」から「SHIFT_JIS」へ変換。")
+            self.show_message(f"「SHIFT-JISに変換」完了！\n{new_file_name}", "blue")
 
         else:
             messagebox.showerror("エラー", "ファイルが選択されてません。")
