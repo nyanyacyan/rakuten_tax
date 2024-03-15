@@ -23,7 +23,6 @@ class App:
 
         root.title("消費税率 追加アプリ")
         root.geometry("400x350")
-        root.configure(bg='#f0f0f0')
 
         # ウィンドウの列の設定
         root.columnconfigure(0, weight=1)
@@ -49,8 +48,8 @@ class App:
         self.cancel_btn = ttk.Button(root, text="キャンセル", command=root.quit)
         self.cancel_btn.grid(row=3, column=2, padx=20, pady=20, sticky="ew")
 
-        self.message_box = ttk.Label(root, text="", height=2,state='disabled', bg='#f0f0f0', bd=0, highlightthickness=0)
-        self.message_box.grid(row=4, column=1, columnspan=2, padx=20, pady=20, sticky="ew")
+        self.message_label = tk.Label(self.root, text="", fg="black")
+        self.message_label.grid(row=4, column=1, columnspan=2, padx=20, pady=20, sticky="ew")
 
 
 # ----------------------------------------------------------------------------------
@@ -79,7 +78,7 @@ class App:
         # インスタンス化
         self.add_order_number = AddOrderNumbers(file_path)
 
-        self.add_order_number.price_fixed()
+        self.add_order_number.csv_fixed()
         self.logger.debug("CSVファイル修正、完了")
 
         self.show_message("CSVファイル選択完了", "black")
@@ -131,6 +130,7 @@ class App:
 
         self.show_message("処理開始", "blue")
         self.main.main()
+        self.show_message("処理完了", "blue")
         messagebox.showinfo("完了通知", "CSV出力が完了しました。\n「updated_file.csv」をご覧ください。")
 
 

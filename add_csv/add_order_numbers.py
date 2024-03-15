@@ -81,3 +81,9 @@ class AddOrderNumbers:
 
 
 # ----------------------------------------------------------------------------------
+
+
+    def csv_fixed(self):
+        self.add_order_number()
+        self.price_fixed()
+        self.logger.debug('CSV処理完了')
