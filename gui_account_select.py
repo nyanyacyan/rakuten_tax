@@ -3,7 +3,7 @@
 #? GUIクラス
 # ----------------------------------------------------------------------------------
 import tkinter as tk
-from tkinter import filedialog, ttk
+from tkinter import filedialog, ttk, messagebox
 from dotenv import load_dotenv
 import os
 import pandas as pd
@@ -109,10 +109,10 @@ class App:
             # encodingを「SHIFT_JIS」へ変更
             df.to_csv(new_file_path, encoding='shift_jis', index=False)
 
-            print(f"「SHIFT_JIS」への変更が 完了しました: {new_file_path} ")
+            messagebox.showinfo("完了通知", "ファイル形式の変換処理が完了しました。\n「UTF-8」から「SHIFT_JIS」へ変換。")
 
         else:
-            print("ファイルが選択されませんでした。")
+            messagebox.showerror("エラー", "ファイルが選択されてません。")
 
 
 # ----------------------------------------------------------------------------------
@@ -133,6 +133,7 @@ class App:
         self.main = Main(login_url, user_id, password)
 
         self.main.main()
+        messagebox.showinfo("完了通知", "CSV出力が完了しました。\n「updated_file.csv」をご覧ください。")
 
 
 # ----------------------------------------------------------------------------------
