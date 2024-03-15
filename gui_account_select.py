@@ -49,7 +49,7 @@ class App:
         self.cancel_btn = ttk.Button(root, text="キャンセル", command=root.quit)
         self.cancel_btn.grid(row=3, column=2, padx=20, pady=20, sticky="ew")
 
-        self.message_box = tk.Text(root, height=2,state='disabled', bg='#f0f0f0', bd=0, highlightthickness=0)
+        self.message_box = ttk.Label(root, text="", height=2,state='disabled', bg='#f0f0f0', bd=0, highlightthickness=0)
         self.message_box.grid(row=4, column=1, columnspan=2, padx=20, pady=20, sticky="ew")
 
 
@@ -65,12 +65,8 @@ class App:
 # ----------------------------------------------------------------------------------
 
 
-    def update_message_box(self, message):
-        # Textウィジェットの状態を変更してメッセージを追加
-        self.message_box.configure(state='normal')  # 書き込み可能に変更
-        self.message_box.insert(tk.END, message)  # メッセージを追加
-        self.message_box.configure(state='disabled')  # 書き込み禁止に戻す
-        self.message_box.see(tk.END)  # スクロールして最新のメッセージを表示
+    def show_message(self, message, color):
+        self.message_label.config(text=message, foreground=color)
 
 
 # ----------------------------------------------------------------------------------
@@ -86,6 +82,7 @@ class App:
         self.add_order_number.price_fixed()
         self.logger.debug("CSVファイル修正、完了")
 
+        self.show_message("CSVファイル選択完了", "black")
         return print("CSVファイル選択完了")
 
 
@@ -132,6 +129,7 @@ class App:
         # main
         self.main = Main(login_url, user_id, password)
 
+        self.show_message("処理開始", "blue")
         self.main.main()
         messagebox.showinfo("完了通知", "CSV出力が完了しました。\n「updated_file.csv」をご覧ください。")
 
