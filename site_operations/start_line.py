@@ -59,7 +59,7 @@ class SiteOperations:
     def buy_history_btnPush(self):
         try:
             current_url = self.chrome.current_url
-            self.logger.info(f"URL: {current_url}")
+            self.logger.debug(f"URL: {current_url}")
 
 
             # 購入履歴を探して押す

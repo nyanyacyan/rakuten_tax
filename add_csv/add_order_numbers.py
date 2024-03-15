@@ -14,8 +14,15 @@ class AddOrderNumbers:
     def __init__(self, read_csv_data):
         self.logger = self.setup_logger()
         self.read_csv_data = read_csv_data
-        self.df = pd.read_csv(self.read_csv_data, encoding='SHIFT_JIS')
 
+        try:
+            self.df = pd.read_csv(self.read_csv_data, encoding='SHIFT_JIS')
+        except FileNotFoundError:
+            self.logger.error(f"ファイルが見つかりません: {self.read_csv_data}")
+        except pd.errors.UnicodeDecodeError:
+            self.logger.error(f"ファイルの種類が違います（'SHIFT_JIS'にする必要があります）: {self.read_csv_data}")
+        except Exception as e:
+            self.logger.error(f"ファイル読み込み中に予期せぬエラーが発生しました: {e}")
 
 # ----------------------------------------------------------------------------------
 # Loggerセットアップ

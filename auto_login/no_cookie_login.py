@@ -44,15 +44,16 @@ timestamp = datetime.now().strftime("%m-%d_%H-%M")
 
 class NoCookieLogin:
     '''一連の流れをここにいれる'''
-    def __init__(self, chrome, config, debug_mode=False):
+    def __init__(self, chrome, userid, password, config, debug_mode=False):
         '''config_xpathにパスを集約させて子クラスで引き渡す'''
 
         self.chrome = chrome
+        self.userid = userid
+        self.password = password
 
         # xpath全体で使えるように初期化
         self.site_name = config["site_name"]
-        self.userid = config["userid"]
-        self.password = config["password"]
+
         self.userid_xpath = config["userid_xpath"]
         self.password_xpath = config["password_xpath"]
         self.login_button_xpath = config["login_button_xpath"]
@@ -147,14 +148,14 @@ class NoCookieLogin:
             # sitekeyを検索
             elements = self.chrome.find_elements_by_css_selector('[data-sitekey]')
             if len(elements) > 0:
-                self.logger.info(f"{self.site_name} reCAPTCHA発見したため手動にて入力")
+                self.logger.debug(f"{self.site_name} reCAPTCHA発見したため手動にて入力")
                 time.sleep(120)
 
             # 通知いれるか検討
 
             # reCAPTCHAなし
             else:
-                self.logger.info(f"reCAPTCHAなし")
+                self.logger.debug(f"reCAPTCHAなし")
 
         except Exception as e:
             self.logger.error(f"reCAPTCHA処理中にエラーが発生しました: {e}")
@@ -196,7 +197,7 @@ class NoCookieLogin:
     def buy_history_btnPush(self):
         try:
             current_url = self.chrome.current_url
-            self.logger.info(f"URL: {current_url}")
+            self.logger.debug(f"URL: {current_url}")
 
 
             # 購入履歴を探して押す

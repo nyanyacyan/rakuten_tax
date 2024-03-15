@@ -90,7 +90,7 @@ class GetCookie:
 
     def open_site(self):
         '''Cookieで開かない際に使うメソッド'''
-        self.logger.info(f"{self.site_name} Cookie作成を開始")
+        self.logger.debug(f"{self.site_name} Cookie作成を開始")
         self.chrome.get(self.login_url)
 
         # 現在のURL
@@ -182,14 +182,14 @@ class GetCookie:
             # sitekeyを検索
             elements = self.chrome.find_elements_by_css_selector('[data-sitekey]')
             if len(elements) > 0:
-                self.logger.info(f"{self.site_name} reCAPTCHA発見したため手動にて入力")
+                self.logger.debug(f"{self.site_name} reCAPTCHA発見したため手動にて入力")
                 time.sleep(120)
 
             # 通知いれるか検討
 
             # reCAPTCHAなし
             else:
-                self.logger.info(f"reCAPTCHAなし")
+                self.logger.debug(f"reCAPTCHAなし")
 
         except Exception as e:
             self.logger.error(f"reCAPTCHA処理中にエラーが発生しました: {e}")

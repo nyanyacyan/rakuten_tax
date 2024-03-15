@@ -152,7 +152,7 @@ class AddTax:
     def reverse(self):
         while True:
             try:
-                self.logger.info(" 1つ前の購入履歴のページに戻ります")
+                self.logger.debug(" 1つ前の購入履歴のページに戻ります")
                 # 次のページへのリンクが存在するかチェック
                 next_page_link = self.chrome.find_element_by_xpath("//a[@data-ratid='ph_pc_pagi_previous']")
 
