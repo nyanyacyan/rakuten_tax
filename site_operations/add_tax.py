@@ -138,8 +138,9 @@ class AddTax:
 
             tax_rate_text = tax_rate_part.text
             self.logger.debug(tax_rate_text)
+            clean_tax_rate = tax_rate_text.replace('%', '')
 
-            return tax_rate_text
+            return clean_tax_rate
 
         except NoSuchElementException:
             self.logger.error(" ファイルの入力に誤りがある可能性があります （金額が一致するものがない）")
